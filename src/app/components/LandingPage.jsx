@@ -36,10 +36,10 @@ export default function LandingPage() {
   const router = useRouter();
 
   // --- CONFIGURAÇÕES ---
-  const whatsappNumber = "5511940306171"; // Seu número
-  const whatsappLink = `https://wa.me/${whatsappNumber}`;
+  const whatsappNumber = "5511940306171"; 
+  const whatsappBase = `https://wa.me/${whatsappNumber}`;
   
-  // --- FUNÇÃO PIXEL INTELIGENTE ---
+  // --- FUNÇÃO PIXEL ---
   const trackPixel = (eventName, params = {}) => {
     if (typeof window !== "undefined" && window.fbq) {
       window.fbq('track', eventName, params);
@@ -47,19 +47,24 @@ export default function LandingPage() {
     console.log(`📡 Pixel Disparado: ${eventName}`, params);
   };
 
-  // Função para abrir o Zap e marcar o Pixel ao mesmo tempo
-  const handleWhatsAppClick = (localizacao) => {
-    trackPixel('Contact', { content_name: localizacao }); // Avisa o Facebook onde clicou
-    window.open(whatsappLink, '_blank'); // Abre o Zap
+  // --- REDIRECIONAMENTO (BRIDGE PAGE) ---
+  const redirectToThankYou = (finalUrl, originName) => {
+    trackPixel('Contact', { content_name: originName });
+    localStorage.setItem("velox_redirect", finalUrl);
+    router.push("/obrigado");
   };
 
-  // Estados da Calculadora
+  const handleSimpleClick = (origin) => {
+      redirectToThankYou(whatsappBase, origin);
+  };
+
+  // Estados
   const [step, setStep] = useState(1);
   const [loadingSim, setLoadingSim] = useState(false);
   const [openIndex, setOpenIndex] = useState(null);
   const toggleIndex = (index) => setOpenIndex(openIndex === index ? null : index);
   
-  // Dados do Formulário
+  // Formulário
   const [formData, setFormData] = useState({
     valorConta: "",
     tipoImovel: "residencial",
@@ -88,7 +93,7 @@ export default function LandingPage() {
     }
 
     setLoadingSim(true);
-    trackPixel('InitiateCheckout', { value: valor, currency: 'BRL', content_category: 'Calculadora Iniciada' });
+    trackPixel('InitiateCheckout', { value: valor, currency: 'BRL' });
     
     setTimeout(() => {
       const novaConta = Math.max(valor * 0.05, 50); 
@@ -107,32 +112,15 @@ export default function LandingPage() {
 
   const handleLeadSubmit = () => {
     if(!formData.nome || !formData.telefone) return alert("Por favor, preencha Nome e Whatsapp.");
-    trackPixel('Lead', { value: simulation.economiaAnual, currency: 'BRL', content_name: 'Lead Calculadora' });
+    trackPixel('AddPaymentInfo'); 
     setStep(3);
   };
 
   const handleFinalWhatsApp = () => {
-    trackPixel('Contact', { content_name: 'Botão Final Calculadora' });
     const fMoney = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-    const text = `*Olá! Fiz a simulação no site da Velox.* ☀️
-
-👤 *MEUS DADOS:*
-Nome: ${formData.nome}
-Cidade: ${formData.cidade}/${formData.estado}
-
-💡 *MINHA CONTA:*
-Valor Atual: R$ ${formData.valorConta}
-Tipo: ${formData.tipoImovel}
-
-📊 *RESULTADO PRELIMINAR:*
-Economia Anual: ${fMoney(simulation.economiaAnual)}
-Placas Estimadas: ${simulation.qtdPlacas}
-Área Necessária: ${simulation.areaNecessaria} m²
-
-*Gostaria de receber a proposta oficial!*`;
-
-    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`, '_blank');
+    const text = `*Olá! Fiz a simulação no site da Velox.* ☀️\n\n👤 *MEUS DADOS:*\nNome: ${formData.nome}\nCidade: ${formData.cidade}/${formData.estado}\n\n💡 *MINHA CONTA:*\nValor Atual: R$ ${formData.valorConta}\nTipo: ${formData.tipoImovel}\n\n📊 *RESULTADO PRELIMINAR:*\nEconomia Anual: ${fMoney(simulation.economiaAnual)}\nPlacas Estimadas: ${simulation.qtdPlacas}\nÁrea Necessária: ${simulation.areaNecessaria} m²\n\n*Gostaria de receber a proposta oficial!*`;
+    const finalUrl = `${whatsappBase}?text=${encodeURIComponent(text)}`;
+    redirectToThankYou(finalUrl, 'Calculadora Final');
   };
 
   const handleCurrencyInput = (e) => {
@@ -143,7 +131,6 @@ Placas Estimadas: ${simulation.qtdPlacas}
     setFormData({ ...formData, valorConta: value });
   };
 
-  // Referências para Animação
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true, margin: "-100px" });
 
@@ -152,6 +139,15 @@ Placas Estimadas: ${simulation.qtdPlacas}
     { label: "Redução na Conta de Luz", value: 95, suffix: "%", duration: 2000, icon: "💡" },
     { label: "Anos de Garantia", value: 25, suffix: "+", duration: 2500, icon: "🛠️" },
     { label: "Energia Disponível", value: 24, suffix: "/7", duration: 1500, icon: "⚡" },
+  ];
+
+  const solutions = [
+    { icon: Home, title: "Residencial", desc: "Proteja sua família da inflação energética." },
+    { icon: Car, title: "Mobilidade Elétrica", desc: "Carregadores Wallbox para seu veículo elétrico." },
+    { icon: Factory, title: "Empresarial", desc: "Reduza o custo fixo e aumente sua margem de lucro." },
+    { icon: Tractor, title: "Agro Solar", desc: "Energia para irrigação e produção no campo." },
+    { icon: Battery, title: "Off-Grid & Híbrido", desc: "Baterias para backup. Nunca mais fique sem luz." },
+    { icon: TrendingUp, title: "Investimento", desc: "Retorno financeiro superior a Renda Fixa e Poupança." }
   ];
 
   const faqs = [
@@ -172,7 +168,7 @@ Placas Estimadas: ${simulation.qtdPlacas}
 
       {/* BOTÃO FLUTUANTE (FIXO) */}
       <button 
-        onClick={() => handleWhatsAppClick('Botão Flutuante Fixo')}
+        onClick={() => handleSimpleClick('Botão Flutuante Fixo')}
         className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#1ebc57] text-white p-4 rounded-full shadow-[0_0_20px_rgba(37,211,102,0.6)] hover:scale-110 transition-all duration-300 flex items-center gap-3 group border-2 border-transparent hover:border-white"
       >
         <FaWhatsapp className="text-3xl" />
@@ -183,7 +179,6 @@ Placas Estimadas: ${simulation.qtdPlacas}
 
       {/* ================= HERO SECTION ================= */}
       <section className="relative min-h-[100vh] lg:min-h-[90vh] flex items-center pt-20 pb-12 overflow-hidden">
-        {/* Background Image Ajustado */}
         <div className="absolute inset-0 z-0">
             <Image src="/hero-solar.webp" alt="Energia Solar" fill className="object-cover opacity-60" priority />
             <div className="absolute inset-0 bg-gradient-to-r from-[#0B0D17] via-[#0B0D17]/50 to-transparent" />
@@ -191,44 +186,24 @@ Placas Estimadas: ${simulation.qtdPlacas}
         </div>
 
         <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center relative z-10">
-            
             {/* Texto Hero */}
             <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }}>
-                <div className="inline-block px-4 py-1 rounded-full border border-[#00FF88]/30 bg-[#00FF88]/10 text-[#00FF88] text-sm font-semibold mb-6">
-                    🚀 Energia Solar Premium
-                </div>
-                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-                    Zere sua conta de luz com a <span className="text-[#00FF88]">Velox Solar</span>
-                </h1>
-                <p className="text-gray-300 text-lg md:text-xl mb-8 leading-relaxed max-w-lg">
-                    Invista no seu imóvel, não na conta de luz. Economia garantida de até 95% com tecnologia de ponta e instalação certificada.
-                </p>
+                <div className="inline-block px-4 py-1 rounded-full border border-[#00FF88]/30 bg-[#00FF88]/10 text-[#00FF88] text-sm font-semibold mb-6">🚀 Energia Solar Premium</div>
+                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">Zere sua conta de luz com a <span className="text-[#00FF88]">Velox Solar</span></h1>
+                <p className="text-gray-300 text-lg md:text-xl mb-8 leading-relaxed max-w-lg">Invista no seu imóvel, não na conta de luz. Economia garantida de até 95% com tecnologia de ponta e instalação certificada.</p>
                 
                 <div className="flex flex-wrap gap-4 text-sm font-medium text-gray-400 mb-8">
-                    <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-lg border border-white/10">
-                        <CheckCircle className="text-yellow-500 w-5 h-5"/> Projeto Homologado
-                    </div>
-                    <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-lg border border-white/10">
-                        <CheckCircle className="text-yellow-500 w-5 h-5"/> Instalação em 15 dias
-                    </div>
+                    <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-lg border border-white/10"><CheckCircle className="text-yellow-500 w-5 h-5"/> Projeto Homologado</div>
+                    <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-lg border border-white/10"><CheckCircle className="text-yellow-500 w-5 h-5"/> Instalação em 15 dias</div>
                 </div>
 
-                {/* BOTÃO HERO */}
-                <button 
-                    onClick={() => handleWhatsAppClick('Botão Principal Hero')}
-                    className="inline-flex items-center gap-3 bg-[#00FF88] text-black font-extrabold py-4 px-8 rounded-full hover:bg-[#00e67a] transition-all shadow-[0_0_30px_rgba(0,255,136,0.4)] hover:scale-105 hover:-translate-y-1 text-lg"
-                >
+                <button onClick={() => handleSimpleClick('Botão Principal Hero')} className="inline-flex items-center gap-3 bg-[#00FF88] text-black font-extrabold py-4 px-8 rounded-full hover:bg-[#00e67a] transition-all shadow-[0_0_30px_rgba(0,255,136,0.4)] hover:scale-105 hover:-translate-y-1 text-lg">
                     <FaWhatsapp size={24}/> Quero meu Orçamento no WhatsApp
                 </button>
             </motion.div>
 
             {/* Calculadora */}
-            <motion.div 
-                initial={{ opacity: 0, y: 50 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="bg-[#141826]/80 backdrop-blur-xl rounded-3xl p-1 border border-white/10 shadow-2xl"
-            >
+            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="bg-[#141826]/80 backdrop-blur-xl rounded-3xl p-1 border border-white/10 shadow-2xl">
                 <div className="bg-[#0B0D17]/50 rounded-[20px] p-6 md:p-8 border border-white/5">
                     <AnimatePresence mode="wait">
                         {step === 1 && (
@@ -238,23 +213,17 @@ Placas Estimadas: ${simulation.qtdPlacas}
                                 <div className="space-y-5">
                                     <div>
                                         <label className="text-[#00FF88] text-xs font-bold uppercase tracking-wider mb-2 block">Valor Mensal da Conta</label>
-                                        <input type="text" value={formData.valorConta} onChange={handleCurrencyInput} placeholder="R$ 0,00"
-                                            className="w-full bg-[#0B0D17] border border-gray-700 focus:border-[#00FF88] rounded-xl py-4 px-4 text-2xl font-bold text-white outline-none transition-colors" />
+                                        <input type="text" value={formData.valorConta} onChange={handleCurrencyInput} placeholder="R$ 0,00" className="w-full bg-[#0B0D17] border border-gray-700 focus:border-[#00FF88] rounded-xl py-4 px-4 text-2xl font-bold text-white outline-none transition-colors" />
                                     </div>
                                     <div>
                                         <label className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 block">Tipo de Imóvel</label>
                                         <div className="grid grid-cols-4 gap-2">
                                             {[ {id:'residencial', icon:Home}, {id:'comercial', icon:Building}, {id:'rural', icon:Tractor}, {id:'industrial', icon:Factory} ].map((tipo) => (
-                                                <button key={tipo.id} onClick={() => setFormData({...formData, tipoImovel: tipo.id})}
-                                                    className={`p-3 rounded-xl border flex justify-center items-center transition-all ${formData.tipoImovel === tipo.id ? "bg-[#00FF88] border-[#00FF88] text-black" : "border-gray-700 text-gray-400 hover:bg-white/5"}`}>
-                                                    <tipo.icon size={20} />
-                                                </button>
+                                                <button key={tipo.id} onClick={() => setFormData({...formData, tipoImovel: tipo.id})} className={`p-3 rounded-xl border flex justify-center items-center transition-all ${formData.tipoImovel === tipo.id ? "bg-[#00FF88] border-[#00FF88] text-black" : "border-gray-700 text-gray-400 hover:bg-white/5"}`}><tipo.icon size={20} /></button>
                                             ))}
                                         </div>
                                     </div>
-                                    <button onClick={handleCalculate} disabled={loadingSim} className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold py-4 rounded-xl text-lg hover:brightness-110 transition-all shadow-[0_0_20px_rgba(234,179,8,0.3)]">
-                                        {loadingSim ? "Calculando Inteligência Solar..." : "Calcular Economia ⚡"}
-                                    </button>
+                                    <button onClick={handleCalculate} disabled={loadingSim} className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold py-4 rounded-xl text-lg hover:brightness-110 transition-all shadow-[0_0_20px_rgba(234,179,8,0.3)]">{loadingSim ? "Calculando..." : "Calcular Economia ⚡"}</button>
                                 </div>
                             </motion.div>
                         )}
@@ -291,28 +260,26 @@ Placas Estimadas: ${simulation.qtdPlacas}
         </div>
       </section>
 
-      {/* ================= NÚMEROS (STATS) ================= */}
+      {/* ================= NÚMEROS ================= */}
       <section ref={statsRef} className="py-20 bg-[#0E111C] border-y border-white/5">
         <div className="container mx-auto grid md:grid-cols-3 gap-12 px-6 text-center">
           {stats.map((stat, i) => (
             <motion.div key={i} initial={{opacity:0, y:20}} whileInView={{opacity:1, y:0}} transition={{delay:i*0.2}}>
                 <div className="text-4xl mb-4">{stat.icon}</div>
-                <h3 className="text-5xl font-bold text-white mb-2"><AnimatedNumber value={stat.value} suffix={stat.suffix} duration={stat.duration} start={statsInView} /></h3>
+                <h3 className="text-5xl font-bold text-white mb-2"><AnimatedNumber value={stat.value} suffix={stat.suffix} duration={2000} start={statsInView} /></h3>
                 <p className="text-[#00FF88] uppercase tracking-wider font-semibold text-sm">{stat.label}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* ================= POR QUE A VELOX? ================= */}
+      {/* ================= POR QUE A VELOX ================= */}
       <section className="py-24 bg-[#0B0D17]">
         <div className="container mx-auto px-6 flex flex-col lg:flex-row gap-16 items-center">
             <motion.div className="lg:w-1/2" initial={{opacity:0, x:-50}} whileInView={{opacity:1, x:0}}>
                 <div className="relative h-[500px] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
                     <Image src="/solar-texto.jpeg" alt="Instalação Profissional" fill className="object-cover hover:scale-105 transition duration-700" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8">
-                        <p className="text-white font-medium">Instalações em todo o Brasil com equipe própria.</p>
-                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8"><p className="text-white font-medium">Instalações em todo o Brasil com equipe própria.</p></div>
                 </div>
             </motion.div>
             <motion.div className="lg:w-1/2 space-y-8" initial={{opacity:0, x:50}} whileInView={{opacity:1, x:0}}>
@@ -332,12 +299,9 @@ Placas Estimadas: ${simulation.qtdPlacas}
       {/* ================= SOLUÇÕES ================= */}
       <section className="py-24 bg-[#0E111C]">
         <div className="container mx-auto px-6">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-                <h2 className="text-4xl font-bold mb-4">Soluções para todos os perfis</h2>
-                <p className="text-gray-400">Do residencial ao grande industrial, temos o projeto ideal para sua necessidade.</p>
-            </div>
+            <div className="text-center max-w-2xl mx-auto mb-16"><h2 className="text-4xl font-bold mb-4">Soluções para todos os perfis</h2><p className="text-gray-400">Do residencial ao grande industrial, temos o projeto ideal para sua necessidade.</p></div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[ { icon: Home, title: "Residencial", desc: "Proteja sua família da inflação energética." }, { icon: Car, title: "Mobilidade Elétrica", desc: "Carregadores Wallbox para seu veículo elétrico." }, { icon: Factory, title: "Empresarial", desc: "Reduza o custo fixo e aumente sua margem de lucro." }, { icon: Tractor, title: "Agro Solar", desc: "Energia para irrigação e produção no campo." }, { icon: Battery, title: "Off-Grid & Híbrido", desc: "Baterias para backup. Nunca mais fique sem luz." }, { icon: TrendingUp, title: "Investimento", desc: "Retorno financeiro superior a Renda Fixa e Poupança." } ].map((item, i) => (
+                {solutions.map((item, i) => (
                     <motion.div key={i} whileHover={{y:-5}} className="bg-[#141826] p-8 rounded-2xl border border-white/5 hover:border-[#00FF88] transition-all group">
                         <item.icon className="w-12 h-12 text-[#00FF88] mb-6 group-hover:scale-110 transition-transform"/>
                         <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
@@ -345,63 +309,56 @@ Placas Estimadas: ${simulation.qtdPlacas}
                     </motion.div>
                 ))}
             </div>
+            <div className="text-center mt-12"><button onClick={() => handleSimpleClick('Botão Soluções')} className="inline-flex items-center gap-2 border border-[#00FF88] text-[#00FF88] font-bold py-3 px-8 rounded-full hover:bg-[#00FF88] hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,136,0.2)]"><FaWhatsapp size={20} /> Falar com um Consultor</button></div>
+        </div>
+      </section>
 
-            {/* BOTÃO CTA SOLUÇÕES */}
-            <div className="text-center mt-12">
-                 <button 
-                    onClick={() => handleWhatsAppClick('Botão Soluções')}
-                    className="inline-flex items-center gap-2 border border-[#00FF88] text-[#00FF88] font-bold py-3 px-8 rounded-full hover:bg-[#00FF88] hover:text-black transition-all shadow-[0_0_15px_rgba(0,255,136,0.2)]"
-                 >
-                     <FaWhatsapp size={20} /> Falar com um Consultor
-                 </button>
+      {/* ================= [RESTAURADA] QUEM SOMOS ================= */}
+      <section className="py-20 bg-[#0B0D17]">
+        <div className="max-w-5xl mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
+            <div className="flex-1 space-y-6">
+                <h2 className="text-4xl font-bold text-[#00FF88]">Quem é a Velox?</h2>
+                <p className="text-gray-300 text-lg leading-relaxed">
+                    Com mais de 10.000 projetos entregues, somos líderes em transformar telhados em usinas de energia limpa.
+                    Nossa missão é democratizar o acesso à energia solar com tecnologia de ponta e engenharia de precisão.
+                </p>
+                <ul className="space-y-3">
+                    <li className="flex items-center gap-3 text-gray-400"><CheckCircle className="text-yellow-500"/> Engenharia Própria</li>
+                    <li className="flex items-center gap-3 text-gray-400"><CheckCircle className="text-yellow-500"/> Pós-venda dedicado</li>
+                    <li className="flex items-center gap-3 text-gray-400"><CheckCircle className="text-yellow-500"/> Homologação em todas as concessionárias</li>
+                </ul>
+                <button onClick={() => handleSimpleClick('Botão Quem Somos')} className="mt-4 px-8 py-3 bg-transparent border border-[#00FF88] text-[#00FF88] rounded-full hover:bg-[#00FF88] hover:text-black transition font-bold">
+                    Conhecer nossa história
+                </button>
+            </div>
+            <div className="flex-1 relative h-[400px] w-full">
+                <Image src="/cards-solar.webp" alt="Equipe Velox" fill className="object-cover rounded-2xl grayscale hover:grayscale-0 transition duration-700" />
             </div>
         </div>
       </section>
 
-      {/* ================= FAQ COMPLETO (10 ITENS) ================= */}
-      <section className="py-24 bg-[#0B0D17]">
+      {/* ================= FAQ ================= */}
+      <section className="py-24 bg-[#0E111C]">
         <div className="container mx-auto px-6 max-w-3xl">
             <h2 className="text-3xl font-bold text-center mb-12">Perguntas Frequentes</h2>
             <div className="space-y-4">
                 {faqs.map((faq, i) => (
                     <div key={i} className="border border-white/10 rounded-xl bg-[#141826] overflow-hidden">
-                        <button onClick={() => toggleIndex(i)} className="w-full flex justify-between items-center p-5 text-left font-semibold hover:bg-white/5 transition">
-                            {faq.question}
-                            <span className="text-[#00FF88] text-2xl">{openIndex === i ? "−" : "+"}</span>
-                        </button>
-                        <AnimatePresence>
-                            {openIndex === i && (
-                                <motion.div initial={{height:0}} animate={{height:"auto"}} exit={{height:0}} className="overflow-hidden">
-                                    <div className="p-5 pt-0 text-gray-400 text-sm leading-relaxed border-t border-white/5">{faq.answer}</div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        <button onClick={() => toggleIndex(i)} className="w-full flex justify-between items-center p-5 text-left font-semibold hover:bg-white/5 transition">{faq.question}<span className="text-[#00FF88] text-2xl">{openIndex === i ? "−" : "+"}</span></button>
+                        <AnimatePresence>{openIndex === i && (<motion.div initial={{height:0}} animate={{height:"auto"}} exit={{height:0}} className="overflow-hidden"><div className="p-5 pt-0 text-gray-400 text-sm leading-relaxed border-t border-white/5">{faq.answer}</div></motion.div>)}</AnimatePresence>
                     </div>
                 ))}
             </div>
-
-            {/* BOTÃO CTA FAQ */}
-            <div className="text-center mt-12">
-                <p className="text-gray-400 mb-4">Ainda tem dúvidas sobre o seu projeto?</p>
-                <button 
-                    onClick={() => handleWhatsAppClick('Botão Final FAQ')}
-                    className="inline-flex items-center gap-2 bg-[#25D366] text-white font-bold py-3 px-8 rounded-full hover:bg-[#1ebc57] transition-all shadow-lg hover:shadow-green-900/40"
-                >
-                    <FaWhatsapp size={20} /> Tirar Dúvidas no WhatsApp
-                </button>
-            </div>
+            <div className="text-center mt-12"><p className="text-gray-400 mb-4">Ainda tem dúvidas sobre o seu projeto?</p><button onClick={() => handleSimpleClick('Botão Final FAQ')} className="inline-flex items-center gap-2 bg-[#25D366] text-white font-bold py-3 px-8 rounded-full hover:bg-[#1ebc57] transition-all shadow-lg hover:shadow-green-900/40"><FaWhatsapp size={20} /> Tirar Dúvidas no WhatsApp</button></div>
         </div>
       </section>
 
       {/* ================= FOOTER ================= */}
       <footer className="bg-black py-12 border-t border-white/10">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="text-center md:text-left">
-                <h4 className="text-2xl font-bold text-white mb-2">VELOX SOLAR</h4>
-                <p className="text-gray-500 text-sm">Energia inteligente para um futuro sustentável.</p>
-            </div>
+            <div className="text-center md:text-left"><h4 className="text-2xl font-bold text-white mb-2">VELOX SOLAR</h4><p className="text-gray-500 text-sm">Energia inteligente para um futuro sustentável.</p></div>
             <div className="flex gap-6">
-                <button onClick={() => handleWhatsAppClick('Ícone Footer Zap')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#00FF88] hover:text-black transition"><FaWhatsapp/></button>
+                <button onClick={() => handleSimpleClick('Ícone Footer Zap')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#00FF88] hover:text-black transition"><FaWhatsapp/></button>
                 <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-pink-600 transition"><FaInstagram/></a>
                 <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-blue-600 transition"><FaEnvelope/></a>
             </div>
