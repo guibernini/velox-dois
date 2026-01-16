@@ -35,9 +35,12 @@ function AnimatedNumber({ value, suffix, duration, start }) {
 export default function LandingPage() {
   const router = useRouter();
 
-  // --- CONFIGURAÇÕES ---
+  // --- CONFIGURAÇÕES GERAIS ---
   const whatsappNumber = "5511940306171"; 
   const whatsappBase = `https://wa.me/${whatsappNumber}`;
+  const instagramLink = "https://www.instagram.com/veloxsolar.pompeiahome/"; // Link recuperado
+  const emailLink = "mailto:saopaulo.pompeia@veloxsolarenergia.com.br"; // Link recuperado
+  const webhookUrl = "https://hook.us2.make.com/6xwyjwejrjvweam1akefa9u35sv72j5g";
   
   // --- FUNÇÃO PIXEL ---
   const trackPixel = (eventName, params = {}) => {
@@ -61,6 +64,7 @@ export default function LandingPage() {
   // Estados
   const [step, setStep] = useState(1);
   const [loadingSim, setLoadingSim] = useState(false);
+  const [sendingLead, setSendingLead] = useState(false);
   const [openIndex, setOpenIndex] = useState(null);
   const toggleIndex = (index) => setOpenIndex(openIndex === index ? null : index);
   
@@ -110,10 +114,39 @@ export default function LandingPage() {
     }, 1000);
   };
 
-  const handleLeadSubmit = () => {
+  // --- ENVIO PARA O MAKE (WEBHOOK) ---
+  const handleLeadSubmit = async () => {
     if(!formData.nome || !formData.telefone) return alert("Por favor, preencha Nome e Whatsapp.");
+    
+    setSendingLead(true);
+
+    const leadData = {
+        data_criacao: new Date().toLocaleString("pt-BR"),
+        nome: formData.nome,
+        telefone: formData.telefone,
+        email: formData.email,
+        cidade: formData.cidade,
+        estado: formData.estado,
+        valor_conta: formData.valorConta,
+        tipo_imovel: formData.tipoImovel,
+        economia_anual_estimada: simulation.economiaAnual,
+        qtd_placas_estimada: simulation.qtdPlacas
+    };
+
+    try {
+        await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(leadData)
+        });
+        console.log("Lead enviado para o Make com sucesso!");
+    } catch (error) {
+        console.error("Erro ao enviar lead:", error);
+    }
+
     trackPixel('AddPaymentInfo'); 
     setStep(3);
+    setSendingLead(false);
   };
 
   const handleFinalWhatsApp = () => {
@@ -134,7 +167,6 @@ export default function LandingPage() {
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true, margin: "-100px" });
 
-  // --- DADOS ---
   const stats = [
     { label: "Redução na Conta de Luz", value: 95, suffix: "%", duration: 2000, icon: "💡" },
     { label: "Anos de Garantia", value: 25, suffix: "+", duration: 2500, icon: "🛠️" },
@@ -236,11 +268,15 @@ export default function LandingPage() {
                                 </div>
                                 <input type="text" placeholder="Seu Nome" value={formData.nome} onChange={e=>setFormData({...formData, nome:e.target.value})} className="w-full p-4 rounded-xl bg-[#0B0D17] border border-gray-700 focus:border-[#00FF88] outline-none text-white" />
                                 <input type="tel" placeholder="WhatsApp (com DDD)" value={formData.telefone} onChange={e=>setFormData({...formData, telefone:e.target.value})} className="w-full p-4 rounded-xl bg-[#0B0D17] border border-gray-700 focus:border-[#00FF88] outline-none text-white" />
+                                <input type="email" placeholder="Email (opcional)" value={formData.email} onChange={e=>setFormData({...formData, email:e.target.value})} className="w-full p-4 rounded-xl bg-[#0B0D17] border border-gray-700 focus:border-[#00FF88] outline-none text-white" />
                                 <div className="grid grid-cols-3 gap-2">
                                     <input type="text" placeholder="Cidade" value={formData.cidade} onChange={e=>setFormData({...formData, cidade:e.target.value})} className="col-span-2 p-4 rounded-xl bg-[#0B0D17] border border-gray-700 focus:border-[#00FF88] outline-none text-white" />
                                     <input type="text" placeholder="UF" value={formData.estado} onChange={e=>setFormData({...formData, estado:e.target.value.toUpperCase()})} maxLength={2} className="p-4 rounded-xl bg-[#0B0D17] border border-gray-700 focus:border-[#00FF88] outline-none text-white text-center" />
                                 </div>
-                                <button onClick={handleLeadSubmit} className="w-full bg-[#00FF88] text-black font-bold py-4 rounded-xl hover:bg-[#00e67a] transition-colors shadow-lg shadow-green-900/20">Ver Resultado Agora 🔓</button>
+                                
+                                <button onClick={handleLeadSubmit} disabled={sendingLead} className="w-full bg-[#00FF88] text-black font-bold py-4 rounded-xl hover:bg-[#00e67a] transition-colors shadow-lg shadow-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {sendingLead ? "Enviando dados..." : "Ver Resultado Agora 🔓"}
+                                </button>
                             </motion.div>
                         )}
                         {step === 3 && (
@@ -266,7 +302,7 @@ export default function LandingPage() {
           {stats.map((stat, i) => (
             <motion.div key={i} initial={{opacity:0, y:20}} whileInView={{opacity:1, y:0}} transition={{delay:i*0.2}}>
                 <div className="text-4xl mb-4">{stat.icon}</div>
-                <h3 className="text-5xl font-bold text-white mb-2"><AnimatedNumber value={stat.value} suffix={stat.suffix} duration={2000} start={statsInView} /></h3>
+                <h3 className="text-5xl font-bold text-white mb-2"><AnimatedNumber value={stat.value} suffix={stat.suffix} duration={stat.duration} start={statsInView} /></h3>
                 <p className="text-[#00FF88] uppercase tracking-wider font-semibold text-sm">{stat.label}</p>
             </motion.div>
           ))}
@@ -313,7 +349,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ================= [RESTAURADA] QUEM SOMOS ================= */}
+      {/* ================= QUEM SOMOS ================= */}
       <section className="py-20 bg-[#0B0D17]">
         <div className="max-w-5xl mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
             <div className="flex-1 space-y-6">
@@ -359,8 +395,8 @@ export default function LandingPage() {
             <div className="text-center md:text-left"><h4 className="text-2xl font-bold text-white mb-2">VELOX SOLAR</h4><p className="text-gray-500 text-sm">Energia inteligente para um futuro sustentável.</p></div>
             <div className="flex gap-6">
                 <button onClick={() => handleSimpleClick('Ícone Footer Zap')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#00FF88] hover:text-black transition"><FaWhatsapp/></button>
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-pink-600 transition"><FaInstagram/></a>
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-blue-600 transition"><FaEnvelope/></a>
+                <a href={instagramLink} target="_blank" onClick={() => trackPixel('Contact', { content_name: 'Instagram Footer' })} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-pink-600 transition"><FaInstagram/></a>
+                <a href={emailLink} onClick={() => trackPixel('Contact', { content_name: 'Email Footer' })} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-blue-600 transition"><FaEnvelope/></a>
             </div>
         </div>
         <div className="text-center text-gray-600 text-xs mt-12">© 2026 Velox Solar. Todos os direitos reservados.</div>
