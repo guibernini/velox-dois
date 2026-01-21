@@ -38,27 +38,51 @@ export default function LandingPage() {
   // --- CONFIGURAÇÕES GERAIS ---
   const whatsappNumber = "5511940306171"; 
   const whatsappBase = `https://wa.me/${whatsappNumber}`;
-  const instagramLink = "https://www.instagram.com/veloxsolar.pompeiahome/"; // Link recuperado
-  const emailLink = "mailto:saopaulo.pompeia@veloxsolarenergia.com.br"; // Link recuperado
+  const instagramLink = "https://www.instagram.com/veloxsolar.pompeiahome/";
+  const emailLink = "mailto:saopaulo.pompeia@veloxsolarenergia.com.br";
   const webhookUrl = "https://hook.us2.make.com/6xwyjwejrjvweam1akefa9u35sv72j5g";
   
-  // --- FUNÇÃO PIXEL ---
-  const trackPixel = (eventName, params = {}) => {
-    if (typeof window !== "undefined" && window.fbq) {
-      window.fbq('track', eventName, params);
+  // ✅ ID DO GOOGLE ADS & RÓTULO
+  const googleAdsId = "AW-17791443438"; 
+  const conversionLabel = "AW-17791443438/q-NqCPPHz9UbEO7Dz6NC";
+
+  // --- FUNÇÃO DE RASTREAMENTO DUPLO (FACEBOOK + GOOGLE) ---
+  const trackConversion = (eventName, params = {}) => {
+    if (typeof window !== "undefined") {
+      
+      // 1. Dispara FACEBOOK
+      if (window.fbq) {
+        window.fbq('track', eventName, params);
+        console.log(`📡 FB Pixel: ${eventName}`);
+      }
+
+      // 2. Dispara GOOGLE ADS
+      if (window.gtag) {
+        // Se for conversão de contato/lead, usa o rótulo específico
+        const sendTo = (eventName === 'Contact' || eventName === 'Lead' || eventName === 'InitiateCheckout') 
+                       ? conversionLabel 
+                       : googleAdsId;
+
+        window.gtag('event', 'conversion', {
+            'send_to': sendTo,
+            'event_callback': () => console.log(`📡 Google Ads: Enviado para ${sendTo}`)
+        });
+      }
     }
-    console.log(`📡 Pixel Disparado: ${eventName}`, params);
   };
 
   // --- REDIRECIONAMENTO (BRIDGE PAGE) ---
   const redirectToThankYou = (finalUrl, originName) => {
-    trackPixel('Contact', { content_name: originName });
+    trackConversion('Contact', { content_name: originName });
     localStorage.setItem("velox_redirect", finalUrl);
     router.push("/obrigado");
   };
 
   const handleSimpleClick = (origin) => {
-      redirectToThankYou(whatsappBase, origin);
+    // Mensagem Padrão para botões avulsos
+    const message = "Olá! Gostaria de fazer um orçamento de energia solar.";
+    const finalUrl = `${whatsappBase}?text=${encodeURIComponent(message)}`;
+    redirectToThankYou(finalUrl, origin);
   };
 
   // Estados
@@ -97,7 +121,8 @@ export default function LandingPage() {
     }
 
     setLoadingSim(true);
-    trackPixel('InitiateCheckout', { value: valor, currency: 'BRL' });
+    // Rastreia início da simulação
+    trackConversion('InitiateCheckout', { value: valor, currency: 'BRL' });
     
     setTimeout(() => {
       const novaConta = Math.max(valor * 0.05, 50); 
@@ -130,7 +155,8 @@ export default function LandingPage() {
         valor_conta: formData.valorConta,
         tipo_imovel: formData.tipoImovel,
         economia_anual_estimada: simulation.economiaAnual,
-        qtd_placas_estimada: simulation.qtdPlacas
+        qtd_placas_estimada: simulation.qtdPlacas,
+        origem: "Landing Page Calculadora (Velox 2)"
     };
 
     try {
@@ -144,7 +170,7 @@ export default function LandingPage() {
         console.error("Erro ao enviar lead:", error);
     }
 
-    trackPixel('AddPaymentInfo'); 
+    trackConversion('AddPaymentInfo'); 
     setStep(3);
     setSendingLead(false);
   };
@@ -395,8 +421,8 @@ export default function LandingPage() {
             <div className="text-center md:text-left"><h4 className="text-2xl font-bold text-white mb-2">VELOX SOLAR</h4><p className="text-gray-500 text-sm">Energia inteligente para um futuro sustentável.</p></div>
             <div className="flex gap-6">
                 <button onClick={() => handleSimpleClick('Ícone Footer Zap')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#00FF88] hover:text-black transition"><FaWhatsapp/></button>
-                <a href={instagramLink} target="_blank" onClick={() => trackPixel('Contact', { content_name: 'Instagram Footer' })} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-pink-600 transition"><FaInstagram/></a>
-                <a href={emailLink} onClick={() => trackPixel('Contact', { content_name: 'Email Footer' })} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-blue-600 transition"><FaEnvelope/></a>
+                <a href={instagramLink} target="_blank" onClick={() => trackConversion('Contact', { content_name: 'Instagram Footer' })} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-pink-600 transition"><FaInstagram/></a>
+                <a href={emailLink} onClick={() => trackConversion('Contact', { content_name: 'Email Footer' })} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-blue-600 transition"><FaEnvelope/></a>
             </div>
         </div>
         <div className="text-center text-gray-600 text-xs mt-12">© 2026 Velox Solar. Todos os direitos reservados.</div>
