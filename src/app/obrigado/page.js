@@ -15,7 +15,7 @@ export default function Obrigado() {
     }
 
     // 2. Recupera o link salvo
-    const redirectUrl = localStorage.getItem("velox_redirect") || "https://wa.me/5511940306171";
+    const redirectUrl = localStorage.getItem("velox_redirect") || "https://wa.me/5511951569352";
 
     // 3. Redirecionamento Automático
     const timer = setInterval(() => {
