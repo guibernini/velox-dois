@@ -36,7 +36,7 @@ export default function LandingPage() {
   const router = useRouter();
 
   // --- CONFIGURAÇÕES GERAIS ---
-  const whatsappNumber = "5511940306171"; 
+  const whatsappNumber = "5511951569352"; // ✅ ALTERADO AQUI
   const whatsappBase = `https://wa.me/${whatsappNumber}`;
   const instagramLink = "https://www.instagram.com/veloxsolar.pompeiahome/";
   const emailLink = "mailto:saopaulo.pompeia@veloxsolarenergia.com.br";
@@ -60,8 +60,8 @@ export default function LandingPage() {
       if (window.gtag) {
         // Se for conversão de contato/lead, usa o rótulo específico
         const sendTo = (eventName === 'Contact' || eventName === 'Lead' || eventName === 'InitiateCheckout') 
-                       ? conversionLabel 
-                       : googleAdsId;
+                        ? conversionLabel 
+                        : googleAdsId;
 
         window.gtag('event', 'conversion', {
             'send_to': sendTo,
