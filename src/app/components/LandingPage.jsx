@@ -335,16 +335,24 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ================= POR QUE A VELOX ================= */}
+      {/* ================= POR QUE A VELOX (CORREÇÃO AQUI) ================= */}
       <section className="py-24 bg-[#0B0D17]">
         <div className="container mx-auto px-6 flex flex-col lg:flex-row gap-16 items-center">
-            <motion.div className="lg:w-1/2" initial={{opacity:0, x:-50}} whileInView={{opacity:1, x:0}}>
-                <div className="relative h-[500px] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-                    <Image src="/solar-texto.jpeg" alt="Instalação Profissional" fill className="object-cover hover:scale-105 transition duration-700" />
+            {/* CORREÇÃO APLICADA NESTE BLOCO: Viewport, Height Responsivo e Sizes na Imagem */}
+            <motion.div className="lg:w-1/2" initial={{opacity:0, x:-50}} whileInView={{opacity:1, x:0}} viewport={{ once: true }}>
+                <div className="relative h-[300px] lg:h-[500px] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+                    <Image 
+                        src="/solar-texto.jpeg" 
+                        alt="Instalação Profissional" 
+                        fill 
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover hover:scale-105 transition duration-700" 
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8"><p className="text-white font-medium">Instalações em todo o Brasil com equipe própria.</p></div>
                 </div>
             </motion.div>
-            <motion.div className="lg:w-1/2 space-y-8" initial={{opacity:0, x:50}} whileInView={{opacity:1, x:0}}>
+            
+            <motion.div className="lg:w-1/2 space-y-8" initial={{opacity:0, x:50}} whileInView={{opacity:1, x:0}} viewport={{ once: true }}>
                 <div><h2 className="text-4xl font-bold mb-4">Por que escolher a Velox?</h2><p className="text-gray-400 text-lg">Não vendemos apenas placas, entregamos uma solução completa de engenharia energética.</p></div>
                 <div className="space-y-4">
                     {[ { title: "Tecnologia Tier-1", desc: "Trabalhamos apenas com as melhores marcas globais (WEG, Deye, Canadian).", icon: CheckCircle }, { title: "Monitoramento App 24h", desc: "Acompanhe sua produção e economia em tempo real pelo celular.", icon: Zap }, { title: "Suporte Vitalício", desc: "Equipe de pós-venda dedicada para garantir sua geração.", icon: Headset } ].map((item, i) => (
