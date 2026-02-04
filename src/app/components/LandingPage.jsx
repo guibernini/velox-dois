@@ -36,7 +36,7 @@ export default function LandingPage() {
   const router = useRouter();
 
   // --- CONFIGURAÇÕES GERAIS ---
-  const whatsappNumber = "5511951569352"; // ✅ ALTERADO AQUI
+  const whatsappNumber = "5511951569352"; 
   const whatsappBase = `https://wa.me/${whatsappNumber}`;
   const instagramLink = "https://www.instagram.com/veloxsolar.pompeiahome/";
   const emailLink = "mailto:saopaulo.pompeia@veloxsolarenergia.com.br";
@@ -46,19 +46,14 @@ export default function LandingPage() {
   const googleAdsId = "AW-17791443438"; 
   const conversionLabel = "AW-17791443438/q-NqCPPHz9UbEO7Dz6NC";
 
-  // --- FUNÇÃO DE RASTREAMENTO DUPLO (FACEBOOK + GOOGLE) ---
+  // --- FUNÇÃO DE RASTREAMENTO DUPLO ---
   const trackConversion = (eventName, params = {}) => {
     if (typeof window !== "undefined") {
-      
-      // 1. Dispara FACEBOOK
       if (window.fbq) {
         window.fbq('track', eventName, params);
         console.log(`📡 FB Pixel: ${eventName}`);
       }
-
-      // 2. Dispara GOOGLE ADS
       if (window.gtag) {
-        // Se for conversão de contato/lead, usa o rótulo específico
         const sendTo = (eventName === 'Contact' || eventName === 'Lead' || eventName === 'InitiateCheckout') 
                         ? conversionLabel 
                         : googleAdsId;
@@ -71,7 +66,6 @@ export default function LandingPage() {
     }
   };
 
-  // --- REDIRECIONAMENTO (BRIDGE PAGE) ---
   const redirectToThankYou = (finalUrl, originName) => {
     trackConversion('Contact', { content_name: originName });
     localStorage.setItem("velox_redirect", finalUrl);
@@ -79,20 +73,17 @@ export default function LandingPage() {
   };
 
   const handleSimpleClick = (origin) => {
-    // Mensagem Padrão para botões avulsos
     const message = "Olá! Gostaria de fazer um orçamento de energia solar.";
     const finalUrl = `${whatsappBase}?text=${encodeURIComponent(message)}`;
     redirectToThankYou(finalUrl, origin);
   };
 
-  // Estados
   const [step, setStep] = useState(1);
   const [loadingSim, setLoadingSim] = useState(false);
   const [sendingLead, setSendingLead] = useState(false);
   const [openIndex, setOpenIndex] = useState(null);
   const toggleIndex = (index) => setOpenIndex(openIndex === index ? null : index);
   
-  // Formulário
   const [formData, setFormData] = useState({
     valorConta: "",
     tipoImovel: "residencial",
@@ -103,7 +94,6 @@ export default function LandingPage() {
     estado: ""
   });
 
-  // Resultados
   const [simulation, setSimulation] = useState({
     economiaAnual: 0,
     qtdPlacas: 0,
@@ -111,7 +101,6 @@ export default function LandingPage() {
     areaNecessaria: 0
   });
 
-  // --- LÓGICA DA CALCULADORA ---
   const handleCalculate = () => {
     const valor = parseFloat(formData.valorConta.replace("R$", "").replace(".", "").replace(",", ".")) || 0;
     
@@ -121,7 +110,6 @@ export default function LandingPage() {
     }
 
     setLoadingSim(true);
-    // Rastreia início da simulação
     trackConversion('InitiateCheckout', { value: valor, currency: 'BRL' });
     
     setTimeout(() => {
@@ -139,10 +127,8 @@ export default function LandingPage() {
     }, 1000);
   };
 
-  // --- ENVIO PARA O MAKE (WEBHOOK) ---
   const handleLeadSubmit = async () => {
     if(!formData.nome || !formData.telefone) return alert("Por favor, preencha Nome e Whatsapp.");
-    
     setSendingLead(true);
 
     const leadData = {
@@ -165,10 +151,7 @@ export default function LandingPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(leadData)
         });
-        console.log("Lead enviado para o Make com sucesso!");
-    } catch (error) {
-        console.error("Erro ao enviar lead:", error);
-    }
+    } catch (error) { console.error("Erro ao enviar lead:", error); }
 
     trackConversion('AddPaymentInfo'); 
     setStep(3);
@@ -244,23 +227,19 @@ export default function LandingPage() {
         </div>
 
         <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center relative z-10">
-            {/* Texto Hero */}
             <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }}>
                 <div className="inline-block px-4 py-1 rounded-full border border-[#00FF88]/30 bg-[#00FF88]/10 text-[#00FF88] text-sm font-semibold mb-6">🚀 Energia Solar Premium</div>
                 <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">Zere sua conta de luz com a <span className="text-[#00FF88]">Velox Solar</span></h1>
                 <p className="text-gray-300 text-lg md:text-xl mb-8 leading-relaxed max-w-lg">Invista no seu imóvel, não na conta de luz. Economia garantida de até 95% com tecnologia de ponta e instalação certificada.</p>
-                
                 <div className="flex flex-wrap gap-4 text-sm font-medium text-gray-400 mb-8">
                     <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-lg border border-white/10"><CheckCircle className="text-yellow-500 w-5 h-5"/> Projeto Homologado</div>
                     <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-lg border border-white/10"><CheckCircle className="text-yellow-500 w-5 h-5"/> Instalação em 15 dias</div>
                 </div>
-
                 <button onClick={() => handleSimpleClick('Botão Principal Hero')} className="inline-flex items-center gap-3 bg-[#00FF88] text-black font-extrabold py-4 px-8 rounded-full hover:bg-[#00e67a] transition-all shadow-[0_0_30px_rgba(0,255,136,0.4)] hover:scale-105 hover:-translate-y-1 text-lg">
                     <FaWhatsapp size={24}/> Quero meu Orçamento no WhatsApp
                 </button>
             </motion.div>
 
-            {/* Calculadora */}
             <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="bg-[#141826]/80 backdrop-blur-xl rounded-3xl p-1 border border-white/10 shadow-2xl">
                 <div className="bg-[#0B0D17]/50 rounded-[20px] p-6 md:p-8 border border-white/5">
                     <AnimatePresence mode="wait">
@@ -299,7 +278,6 @@ export default function LandingPage() {
                                     <input type="text" placeholder="Cidade" value={formData.cidade} onChange={e=>setFormData({...formData, cidade:e.target.value})} className="col-span-2 p-4 rounded-xl bg-[#0B0D17] border border-gray-700 focus:border-[#00FF88] outline-none text-white" />
                                     <input type="text" placeholder="UF" value={formData.estado} onChange={e=>setFormData({...formData, estado:e.target.value.toUpperCase()})} maxLength={2} className="p-4 rounded-xl bg-[#0B0D17] border border-gray-700 focus:border-[#00FF88] outline-none text-white text-center" />
                                 </div>
-                                
                                 <button onClick={handleLeadSubmit} disabled={sendingLead} className="w-full bg-[#00FF88] text-black font-bold py-4 rounded-xl hover:bg-[#00e67a] transition-colors shadow-lg shadow-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
                                     {sendingLead ? "Enviando dados..." : "Ver Resultado Agora 🔓"}
                                 </button>
@@ -335,22 +313,23 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ================= POR QUE A VELOX (CORREÇÃO AQUI) ================= */}
+      {/* ================= POR QUE A VELOX (CORREÇÃO TOTAL) ================= */}
       <section className="py-24 bg-[#0B0D17]">
         <div className="container mx-auto px-6 flex flex-col lg:flex-row gap-16 items-center">
-            {/* CORREÇÃO APLICADA NESTE BLOCO: Viewport, Height Responsivo e Sizes na Imagem */}
-            <motion.div className="lg:w-1/2" initial={{opacity:0, x:-50}} whileInView={{opacity:1, x:0}} viewport={{ once: true }}>
+            {/* 🛑 AQUI ESTAVA O ERRO: Removi a animação (motion.div) e usei div normal. Adicionei unoptimized. */}
+            <div className="lg:w-1/2">
                 <div className="relative h-[300px] lg:h-[500px] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
                     <Image 
                         src="/solar-texto.jpeg" 
                         alt="Instalação Profissional" 
                         fill 
+                        unoptimized={true} 
                         sizes="(max-width: 768px) 100vw, 50vw"
                         className="object-cover hover:scale-105 transition duration-700" 
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8"><p className="text-white font-medium">Instalações em todo o Brasil com equipe própria.</p></div>
                 </div>
-            </motion.div>
+            </div>
             
             <motion.div className="lg:w-1/2 space-y-8" initial={{opacity:0, x:50}} whileInView={{opacity:1, x:0}} viewport={{ once: true }}>
                 <div><h2 className="text-4xl font-bold mb-4">Por que escolher a Velox?</h2><p className="text-gray-400 text-lg">Não vendemos apenas placas, entregamos uma solução completa de engenharia energética.</p></div>
