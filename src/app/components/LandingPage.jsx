@@ -40,7 +40,9 @@ export default function LandingPage() {
   const whatsappBase = `https://wa.me/${whatsappNumber}`;
   const instagramLink = "https://www.instagram.com/veloxsolar.pompeiahome/";
   const emailLink = "mailto:saopaulo.pompeia@veloxsolarenergia.com.br";
-  const webhookUrl = "https://hook.us2.make.com/6xwyjwejrjvweam1akefa9u35sv72j5g";
+  
+  // ✅ WEBHOOK ATUALIZADO AQUI
+  const webhookUrl = "https://hook.us2.make.com/hcstumoeycg1xhdy9q4uk4r07kpzytij";
   
   // ✅ ID DO GOOGLE ADS & RÓTULO
   const googleAdsId = "AW-17791443438"; 
