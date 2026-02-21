@@ -1,21 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 
 export default function Obrigado() {
   const [count, setCount] = useState(3);
+  const conversionFired = useRef(false); // Trava para não duplicar a conversão
+
+  // Número centralizado para não ter erro
+  const whatsappNumber = "5511951569352";
+  const defaultRedirect = `https://wa.me/${whatsappNumber}`;
+
+  // Função unificada para disparar Google Ads e Facebook Pixel
+  const fireConversionTags = () => {
+    if (typeof window !== "undefined" && !conversionFired.current) {
+      
+      // 1. Facebook Pixel
+      if (window.fbq) {
+        window.fbq('track', 'Lead');
+        window.fbq('track', 'CompleteRegistration');
+        console.log("📡 FB Pixel: Lead disparado");
+      }
+
+      // 2. Google Ads
+      if (window.gtag) {
+        window.gtag('event', 'conversion', {
+          'send_to': 'AW-17791443438/q-NqCPPHz9UbEO7Dz6NC',
+          'event_callback': () => console.log('📡 Google Ads: Conversão disparada na Obrigado')
+        });
+      }
+
+      // Marca que já disparou para não contar duas vezes se o usuário clicar no botão
+      conversionFired.current = true; 
+    }
+  };
 
   useEffect(() => {
-    // 1. Dispara o Pixel de LEAD (Conversão Real)
-    if (typeof window !== "undefined" && window.fbq) {
-      window.fbq('track', 'Lead'); 
-      window.fbq('track', 'CompleteRegistration');
-    }
+    // 1. Dispara as tags assim que a página carrega
+    fireConversionTags();
 
-    // 2. Recupera o link salvo
-    const redirectUrl = localStorage.getItem("velox_redirect") || "https://wa.me/5511951569352";
+    // 2. Recupera o link salvo (ou usa o padrão atualizado)
+    const redirectUrl = localStorage.getItem("velox_redirect") || defaultRedirect;
 
     // 3. Redirecionamento Automático
     const timer = setInterval(() => {
@@ -24,13 +50,20 @@ export default function Obrigado() {
 
     const redirect = setTimeout(() => {
       window.location.href = redirectUrl;
-    }, 3000); // Espera 3 segundos para garantir o Pixel
+    }, 3000); // Espera 3 segundos para garantir que deu tempo do Pixel e Google Ads enviarem os dados
 
     return () => {
       clearInterval(timer);
       clearTimeout(redirect);
     };
   }, []);
+
+  // 4. Função do botão manual
+  const handleManualClick = () => {
+    fireConversionTags(); // Tenta disparar a tag caso o carregamento falhe ou a pessoa clique muito rápido
+    const url = localStorage.getItem("velox_redirect") || defaultRedirect;
+    window.location.href = url;
+  };
 
   return (
     <div className="min-h-screen bg-[#0B0D17] flex flex-col items-center justify-center text-center px-6 font-sans text-white">
@@ -51,14 +84,11 @@ export default function Obrigado() {
         </div>
 
         <div className="flex justify-center">
-            <Loader2 className="animate-spin text-gray-500" />
+          <Loader2 className="animate-spin text-gray-500" />
         </div>
 
         <button 
-          onClick={() => {
-            const url = localStorage.getItem("velox_redirect") || "https://wa.me/5511940306171";
-            window.location.href = url;
-          }}
+          onClick={handleManualClick}
           className="mt-8 text-sm text-gray-500 underline hover:text-white transition"
         >
           Não foi redirecionado? Clique aqui.
