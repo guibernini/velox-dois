@@ -41,26 +41,32 @@ export default function LandingPage() {
   const instagramLink = "https://www.instagram.com/veloxsolar.pompeiahome/";
   const emailLink = "mailto:saopaulo.pompeia@veloxsolarenergia.com.br";
   
-  // ✅ WEBHOOK ATUALIZADO AQUI
   const webhookUrl = "https://hook.us2.make.com/hcstumoeycg1xhdy9q4uk4r07kpzytij";
   
-  // ✅ ID DO GOOGLE ADS & RÓTULO
   const googleAdsId = "AW-17791443438"; 
   const conversionLabel = "AW-17791443438/q-NqCPPHz9UbEO7Dz6NC";
 
-  // --- FUNÇÃO DE RASTREAMENTO DUPLO ---
+  // --- FUNÇÃO DE RASTREAMENTO CORRIGIDA ---
   const trackConversion = (eventName, params = {}) => {
     if (typeof window !== "undefined") {
       if (window.fbq) {
-        window.fbq('track', eventName, params);
-        console.log(`📡 FB Pixel: ${eventName}`);
+        // Se for ClickSocial, manda como Contact pro Meta (ou pode deixar ViewContent se preferir)
+        const fbEvent = eventName === 'ClickSocial' ? 'Contact' : eventName;
+        window.fbq('track', fbEvent, params);
+        console.log(`📡 FB Pixel: ${fbEvent}`);
       }
       if (window.gtag) {
-        const sendTo = (eventName === 'Contact' || eventName === 'Lead' || eventName === 'InitiateCheckout') 
+        // 🔥 CORREÇÃO: Apenas Contact e Lead disparam a conversão paga do Google
+        const sendTo = (eventName === 'Contact' || eventName === 'Lead') 
                         ? conversionLabel 
                         : googleAdsId;
 
-        window.gtag('event', 'conversion', {
+        // Ajuste de nomenclatura para o Google Analytics/Ads
+        let googleEventName = 'conversion';
+        if (eventName === 'InitiateCheckout') googleEventName = 'begin_checkout';
+        if (eventName === 'ClickSocial') googleEventName = 'click_social';
+
+        window.gtag('event', googleEventName, {
             'send_to': sendTo,
             'event_callback': () => console.log(`📡 Google Ads: Enviado para ${sendTo}`)
         });
@@ -68,8 +74,11 @@ export default function LandingPage() {
     }
   };
 
-  const redirectToThankYou = (finalUrl, originName) => {
-    trackConversion('Contact', { content_name: originName });
+  // 🔥 CORREÇÃO: Adicionado skipTracking para evitar dupla cobrança
+  const redirectToThankYou = (finalUrl, originName, skipTracking = false) => {
+    if (!skipTracking) {
+      trackConversion('Contact', { content_name: originName });
+    }
     localStorage.setItem("velox_redirect", finalUrl);
     router.push("/obrigado");
   };
@@ -112,6 +121,7 @@ export default function LandingPage() {
     }
 
     setLoadingSim(true);
+    // 🔥 CORREÇÃO: Isso agora vai pro ID geral, não gasta sua verba como conversão final
     trackConversion('InitiateCheckout', { value: valor, currency: 'BRL' });
     
     setTimeout(() => {
@@ -155,7 +165,8 @@ export default function LandingPage() {
         });
     } catch (error) { console.error("Erro ao enviar lead:", error); }
 
-    trackConversion('AddPaymentInfo'); 
+    // 🔥 CORREÇÃO: Dispara a conversão "Lead" de verdade aqui, pois os dados foram entregues
+    trackConversion('Lead', { content_name: 'Calculadora - Dados Preenchidos' }); 
     setStep(3);
     setSendingLead(false);
   };
@@ -164,7 +175,9 @@ export default function LandingPage() {
     const fMoney = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const text = `*Olá! Fiz a simulação no site da Velox.* ☀️\n\n👤 *MEUS DADOS:*\nNome: ${formData.nome}\nCidade: ${formData.cidade}/${formData.estado}\n\n💡 *MINHA CONTA:*\nValor Atual: R$ ${formData.valorConta}\nTipo: ${formData.tipoImovel}\n\n📊 *RESULTADO PRELIMINAR:*\nEconomia Anual: ${fMoney(simulation.economiaAnual)}\nPlacas Estimadas: ${simulation.qtdPlacas}\nÁrea Necessária: ${simulation.areaNecessaria} m²\n\n*Gostaria de receber a proposta oficial!*`;
     const finalUrl = `${whatsappBase}?text=${encodeURIComponent(text)}`;
-    redirectToThankYou(finalUrl, 'Calculadora Final');
+    
+    // 🔥 CORREÇÃO: skipTracking = true para não disparar Contact por cima do Lead
+    redirectToThankYou(finalUrl, 'Calculadora Final', true);
   };
 
   const handleCurrencyInput = (e) => {
@@ -315,11 +328,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ================= POR QUE A VELOX (CORREÇÃO: HTML IMG TAG) ================= */}
+      {/* ================= POR QUE A VELOX ================= */}
       <section className="py-24 bg-[#0B0D17]">
         <div className="container mx-auto px-6 flex flex-col lg:flex-row gap-16 items-center">
             
-            {/* 🛑 ALTERAÇÃO: Usando tag <img> padrão do HTML */}
             <div className="lg:w-1/2">
                 <div className="relative h-[300px] lg:h-[500px] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
                     <img 
@@ -408,8 +420,9 @@ export default function LandingPage() {
             <div className="text-center md:text-left"><h4 className="text-2xl font-bold text-white mb-2">VELOX SOLAR</h4><p className="text-gray-500 text-sm">Energia inteligente para um futuro sustentável.</p></div>
             <div className="flex gap-6">
                 <button onClick={() => handleSimpleClick('Ícone Footer Zap')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#00FF88] hover:text-black transition"><FaWhatsapp/></button>
-                <a href={instagramLink} target="_blank" onClick={() => trackConversion('Contact', { content_name: 'Instagram Footer' })} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-pink-600 transition"><FaInstagram/></a>
-                <a href={emailLink} onClick={() => trackConversion('Contact', { content_name: 'Email Footer' })} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-blue-600 transition"><FaEnvelope/></a>
+                {/* 🔥 CORREÇÃO: Mudei para ClickSocial para não gastar o Ads */}
+                <a href={instagramLink} target="_blank" onClick={() => trackConversion('ClickSocial', { content_name: 'Instagram Footer' })} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-pink-600 transition"><FaInstagram/></a>
+                <a href={emailLink} onClick={() => trackConversion('ClickSocial', { content_name: 'Email Footer' })} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-blue-600 transition"><FaEnvelope/></a>
             </div>
         </div>
         <div className="text-center text-gray-600 text-xs mt-12">© 2026 Velox Solar. Todos os direitos reservados.</div>
